@@ -20,18 +20,22 @@ def load_xlsx(file_path):
 
 # Function to create a single-page PDF
 def create_single_page_pdf(pdf_path, page_number):
-    doc = fitz.open(pdf_path)
-    if page_number < doc.page_count:
-        # Create a new PDF
-        new_pdf = fitz.open()
-        new_pdf.insert_pdf(doc, from_page=page_number, to_page=page_number)
-        # Create a temporary file
-        temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-        new_pdf.save(temp_pdf.name)
-        new_pdf.close()
-        return temp_pdf.name
-    else:
-        return None
+    with fitz.open(pdf_path) as doc:  # Đảm bảo đóng file PDF
+        if page_number < doc.page_count:
+            # Tạo PDF mới chỉ chứa 1 trang
+            new_pdf = fitz.open()
+            new_pdf.insert_pdf(doc, from_page=page_number, to_page=page_number)
+            
+            # Tạo file tạm và lưu PDF
+            temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+            temp_pdf_path = temp_pdf.name
+            temp_pdf.close()  # Đóng file tạm để tránh lỗi
+            new_pdf.save(temp_pdf_path)
+            new_pdf.close()
+
+            return temp_pdf_path  # Trả về đường dẫn file mới tạo
+
+    return None  # Trả về None nếu trang không hợp lệ
 
 # Load configuration
 with open('config.yaml') as file:
@@ -183,7 +187,7 @@ else:
             display_data = data.iloc[start:end]
 
             # Header
-            header_cols = st.columns([3] + [6] * len(display_data.columns) + [5])
+            header_cols = st.columns([10] + [15] * len(display_data.columns) + [10])
             with header_cols[0]:
                 st.write("**INDEX**")
             for i, column in enumerate(display_data.columns):
@@ -196,7 +200,7 @@ else:
 
             # Display table data with preview button
             for idx, row in display_data.iterrows():
-                cols = st.columns([3] + [6] * len(row) + [5])
+                cols = st.columns([10] + [15] * len(row) + [10])
                 with cols[0]:
                     st.write(f"{idx + 1}")
                 for i, column in enumerate(row.index):
@@ -205,7 +209,7 @@ else:
                 
                 with cols[len(row) + 1]:
                     if st.button("Preview PDF", key=f"preview_{idx}"):
-                        file_path = 'sam.pdf'  # Update this with your path
+                        file_path = 'test.pdf'  # Update this with your path
                         if file_path.endswith('.pdf'):
                             page_number = 0  # Change the page number as needed
                             single_page_pdf_path = create_single_page_pdf(file_path, page_number)
