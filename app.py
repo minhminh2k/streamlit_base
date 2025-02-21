@@ -187,7 +187,7 @@ else:
             display_data = data.iloc[start:end]
 
             # Header
-            header_cols = st.columns([10] + [15] * len(display_data.columns) + [10])
+            header_cols = st.columns([10] + [20] * len(display_data.columns) + [15])
             with header_cols[0]:
                 st.write("**INDEX**")
             for i, column in enumerate(display_data.columns):
@@ -200,7 +200,7 @@ else:
 
             # Display table data with preview button
             for idx, row in display_data.iterrows():
-                cols = st.columns([10] + [15] * len(row) + [10])
+                cols = st.columns([10] + [20] * len(row) + [15])
                 with cols[0]:
                     st.write(f"{idx + 1}")
                 for i, column in enumerate(row.index):
