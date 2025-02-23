@@ -220,9 +220,8 @@ else:
                                 with open(single_page_pdf_path, "rb") as pdf_file:
                                     pdf_data = pdf_file.read()
                                     pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
-                                    # from streamlit_pdf_viewer import pdf_viewer
-                                    # pdf_viewer(pdf_data, width=700, height=1000)
-                                    st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="1000" type="application/pdf"></iframe>', unsafe_allow_html=True)
+                                    pdf_viewer(pdf_data, width=700, height=1000)
+                                    # st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="1000" type="application/pdf"></iframe>', unsafe_allow_html=True)
                             else:
                                 st.text("Invalid page number.")
                         else:
