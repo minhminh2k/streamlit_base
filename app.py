@@ -6,6 +6,8 @@ import streamlit as st
 import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
 import tempfile
+from streamlit_pdf_viewer import pdf_viewer
+
 
 st.set_page_config(
     page_title="AIONA",
@@ -128,8 +130,9 @@ else:
         if uploaded_file is not None:
             st.write("File preview:")
             pdf_data = uploaded_file.read()
-            pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
-            st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="500" type="application/pdf"></iframe>', unsafe_allow_html=True)
+            pdf_viewer(pdf_data, width=700, height=1000)
+            # pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+            # st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="500" type="application/pdf"></iframe>', unsafe_allow_html=True)
             
     elif st.session_state.screen == 'design' or st.session_state.screen == 'incident':
         st.title('Search')
@@ -187,7 +190,7 @@ else:
             display_data = data.iloc[start:end]
 
             # Header
-            header_cols = st.columns([10] + [20] * len(display_data.columns) + [15])
+            header_cols = st.columns([10] + [30] * len(display_data.columns) + [15])
             with header_cols[0]:
                 st.write("**INDEX**")
             for i, column in enumerate(display_data.columns):
@@ -200,7 +203,7 @@ else:
 
             # Display table data with preview button
             for idx, row in display_data.iterrows():
-                cols = st.columns([10] + [20] * len(row) + [15])
+                cols = st.columns([10] + [30] * len(row) + [15])
                 with cols[0]:
                     st.write(f"{idx + 1}")
                 for i, column in enumerate(row.index):
@@ -217,6 +220,8 @@ else:
                                 with open(single_page_pdf_path, "rb") as pdf_file:
                                     pdf_data = pdf_file.read()
                                     pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+                                    # from streamlit_pdf_viewer import pdf_viewer
+                                    # pdf_viewer(pdf_data, width=700, height=1000)
                                     st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="1000" type="application/pdf"></iframe>', unsafe_allow_html=True)
                             else:
                                 st.text("Invalid page number.")
