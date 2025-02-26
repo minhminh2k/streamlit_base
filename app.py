@@ -7,6 +7,7 @@ import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
 import tempfile
 from streamlit_pdf_viewer import pdf_viewer
+import streamlit.components.v1 as components
 
 
 st.set_page_config(
@@ -14,6 +15,10 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+### Page title
+st.sidebar.title('AIONA Front-end')
+
 
 @st.cache_data
 def load_xlsx(file_path):
@@ -126,21 +131,22 @@ else:
     elif st.session_state.screen == 'upload':
 
         st.title("📁 Upload File")
-        uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-        if uploaded_file is not None:
-            st.write("File preview:")
-            pdf_data = uploaded_file.read()
-            pdf_viewer(pdf_data, width=700, height=1000)
-            # pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
-            # st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="500" type="application/pdf"></iframe>', unsafe_allow_html=True)
+        uploaded_files = st.file_uploader("Upload a PDF file", type=["pdf"], accept_multiple_files=True)
+        if uploaded_files is not None:
+            for uploaded_file in uploaded_files:
+                st.write("File preview:")
+                pdf_data = uploaded_file.read()
+                pdf_viewer(pdf_data, width=700, height=1000)
+                pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+                pdf_display = f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="500" type="application/pdf"></iframe>'
+                # st.markdown(pdf_display, unsafe_allow_html=True)
             
     elif st.session_state.screen == 'design' or st.session_state.screen == 'incident':
         st.title('Search')
-
         search_term = st.text_input('Search:', '')
 
         if search_term.strip():
-            xlsx_path = 'excel.xlsx'
+            xlsx_path = 'assets/excel.xlsx'
             data = load_xlsx(xlsx_path)
 
             # Convert all columns to string type for searching
@@ -151,7 +157,7 @@ else:
             if 'page_size' not in st.session_state:
                 st.session_state.page_size = 5
             if 'page' not in st.session_state:
-                st.session_state.current_page = 1
+                st.session_state.page = 1
 
             columns = data.columns.tolist()
             selected_column = st.selectbox("Select a column to filter", columns)
@@ -178,19 +184,32 @@ else:
                 data = data.sort_values(
                     by=sort_field, ascending=sort_direction == "⬆️", ignore_index=True
                 )
+            bottom_menu = st.columns((4, 1, 1))
+            with bottom_menu[2]:
+                page_size = st.selectbox("Page Size", options=[5, 10, 25, 50], key="page_size_selectbox")
+                st.session_state.page_size = page_size
+            with bottom_menu[1]:
+                total_pages = max(1, (len(data) + st.session_state.page_size - 1) // st.session_state.page_size, )
+                page = st.number_input("Page", min_value=1, max_value=total_pages, step=1, key="page_number_input")
+                st.session_state.page = page                
+            with bottom_menu[0]:
+                st.markdown(f"Page **{st.session_state.page}** of **{total_pages}** ")
+            
+            if st.session_state.page_size != page_size or st.session_state.page != page:
+                st.session_state.page_size = page_size
+                st.session_state.page = page
             
             pagination = st.container()
 
             total_pages = (len(data) + st.session_state.page_size - 1) // st.session_state.page_size
-            page = st.session_state.get('page', 1)
 
             # Display data by page
-            start = (page - 1) * st.session_state.page_size
+            start = (st.session_state.get('page', 1) - 1) * st.session_state.page_size
             end = start + st.session_state.page_size
             display_data = data.iloc[start:end]
 
             # Header
-            header_cols = st.columns([10] + [30] * len(display_data.columns) + [15])
+            header_cols = st.columns([10] + [15] * 3 + [30] * (len(display_data.columns) - 3) + [15])
             with header_cols[0]:
                 st.write("**INDEX**")
             for i, column in enumerate(display_data.columns):
@@ -199,11 +218,10 @@ else:
             with header_cols[len(display_data.columns) + 1]:
                 st.write("**PREVIEW**")
             st.markdown("---")
-            
 
             # Display table data with preview button
             for idx, row in display_data.iterrows():
-                cols = st.columns([10] + [30] * len(row) + [15])
+                cols = st.columns([10] + [15] * 3 + [30] * (len(row) - 3 ) + [15])
                 with cols[0]:
                     st.write(f"{idx + 1}")
                 for i, column in enumerate(row.index):
@@ -212,7 +230,8 @@ else:
                 
                 with cols[len(row) + 1]:
                     if st.button("Preview PDF", key=f"preview_{idx}"):
-                        file_path = 'test.pdf'  # Update this with your path
+                        print(st.session_state.screen)
+                        file_path = 'assets/test.pdf'  # Update this with your path
                         if file_path.endswith('.pdf'):
                             page_number = 0  # Change the page number as needed
                             single_page_pdf_path = create_single_page_pdf(file_path, page_number)
@@ -220,8 +239,9 @@ else:
                                 with open(single_page_pdf_path, "rb") as pdf_file:
                                     pdf_data = pdf_file.read()
                                     pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
-                                    pdf_viewer(pdf_data, width=700, height=1000)
-                                    # st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="1000" type="application/pdf"></iframe>', unsafe_allow_html=True)
+                                    # pdf_viewer(pdf_data, width=700, height=1000) #, rendering="legacy_iframe")
+                                    # components.iframe(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="1000" type="application/pdf"></iframe>', height=1000)
+                                    st.markdown(f'<iframe src="data:application/pdf;base64,{pdf_base64}" width="700" height="1000" type="application/pdf"></iframe>', unsafe_allow_html=True)
                             else:
                                 st.text("Invalid page number.")
                         else:
@@ -229,27 +249,3 @@ else:
                 st.markdown("---")
             
             st.write(f'Found {len(data)} results')
-
-            bottom_menu = st.columns((4, 1, 1))
-            with bottom_menu[2]:
-                st.session_state.page_size = st.selectbox("Page Size", options=[5, 10, 25, 50])
-            with bottom_menu[1]:
-                total_pages = max(1, (len(data) + st.session_state.page_size - 1) // st.session_state.page_size)
-                current_page = st.number_input("Page", min_value=1, max_value=total_pages, step=1)
-                st.session_state['page'] = current_page
-            with bottom_menu[0]:
-                st.markdown(f"Page **{current_page}** of **{total_pages}** ")
-
-            # # Page navigation buttons
-            # col1, col2, col3 = st.columns([1, 4, 1])
-            # with col1:
-            #     if st.button("Previous") and page > 1:
-            #         page -= 1
-            #         st.session_state['page'] = page
-            # with col3:
-            #     if st.button("Next") and page < total_pages:
-            #         page += 1
-            #         st.session_state['page'] = page
-
-            # # Display current page number
-            # st.write(f"Page {page} of {total_pages}")
